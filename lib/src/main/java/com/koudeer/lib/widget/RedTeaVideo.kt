@@ -52,7 +52,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
 
     private fun initView() {
         mTextureContainer = findViewById(R.id.texture_container)
-        mImgStart = findViewById(R.id.img_start)
+        mImgStart = findViewById(R.id.img_center_controller)
         mProgress = findViewById(R.id.progress)
     }
 
@@ -106,7 +106,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
 
     override fun onClick(v: View?) {
         when (v?.id) {
-            R.id.img_start -> startVideo()
+            R.id.img_center_controller -> startVideo()
         }
     }
 
