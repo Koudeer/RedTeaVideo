@@ -12,4 +12,8 @@ interface IVideo {
 
     fun getUrl(): String
 
+    fun onError()
+
+    fun onCompletion()
+
 }

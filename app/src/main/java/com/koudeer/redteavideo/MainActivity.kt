@@ -17,7 +17,16 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         mVideo = findViewById(R.id.video)
+        mVideo.setUrl(url)
+    }
 
-        mVideo.startVideo(url)
+    override fun onResume() {
+        super.onResume()
+        mVideo.onResumeLifeCycle()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        mVideo.onPauseLifeCycle()
     }
 }

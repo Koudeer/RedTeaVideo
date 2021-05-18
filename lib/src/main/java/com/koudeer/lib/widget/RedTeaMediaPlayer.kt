@@ -4,13 +4,17 @@ import android.graphics.SurfaceTexture
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
+import android.util.Log
 import android.view.Surface
 import tv.danmaku.ijk.media.player.IMediaPlayer
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
 
-class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo) {
+class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
+    IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,
+    IMediaPlayer.OnCompletionListener, IMediaPlayer.OnErrorListener {
+    private val TAG = "RedTeaMediaPlayer"
 
-    private lateinit var mMedia: IMediaPlayer
+    private lateinit var mMedia: IjkMediaPlayer
 
     override fun prepare() {
         mHandler = Handler(Looper.getMainLooper())
@@ -20,6 +24,14 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo) {
 
         mMediaHandler.post {
             mMedia = IjkMediaPlayer()
+
+            //自动播放 0关闭 1开启
+            mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0)
+
+            mMedia.setOnPreparedListener(this)
+            mMedia.setOnInfoListener(this)
+            mMedia.setOnCompletionListener(this)
+            mMedia.setOnErrorListener(this)
 
             mMedia.setDataSource(iVideo.getUrl())
             mMedia.prepareAsync()
@@ -43,8 +55,8 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo) {
         if (mSurfaceTexture == null) {
             mSurfaceTexture = surface
             prepare()
-        }else{
-            iVideo.onSurfaceTexture(surface)
+        } else {
+            iVideo.onSurfaceTexture(mSurfaceTexture!!)
         }
     }
 
@@ -56,5 +68,23 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo) {
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+    }
+
+    override fun onPrepared(p0: IMediaPlayer?) {
+        mHandler.post { iVideo.prepare() }
+    }
+
+    override fun onInfo(p0: IMediaPlayer?, p1: Int, p2: Int): Boolean {
+        mHandler.post { iVideo.onInfo(p1, p2) }
+        return false
+    }
+
+    override fun onCompletion(p0: IMediaPlayer?) {
+        mHandler.post { iVideo.onCompletion() }
+    }
+
+    override fun onError(p0: IMediaPlayer?, p1: Int, p2: Int): Boolean {
+        mHandler.post { iVideo.onError() }
+        return false
     }
 }
