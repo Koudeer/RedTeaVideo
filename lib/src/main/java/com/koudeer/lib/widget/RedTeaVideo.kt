@@ -10,27 +10,34 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.View
-import android.widget.FrameLayout
-import android.widget.ImageView
-import android.widget.ProgressBar
+import android.widget.*
 import com.koudeer.lib.R
 import com.koudeer.lib.enum.Status
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
 import java.lang.RuntimeException
+import java.util.*
 
 class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListener {
     val TAG = "RedTeaVideo"
 
     private var mUrl: String = ""
     var mStatus = Status.NORMAL
-    private lateinit var mGesture: GestureDetector
-    lateinit var mMedia: IRedTeaMediaPlayer
+    private var mGesture: GestureDetector
+    internal var mMedia: IRedTeaMediaPlayer? = null
 
     private lateinit var mTexture: TextureView
 
     lateinit var mTextureContainer: FrameLayout
+    lateinit var mBottomContainer: RelativeLayout
     lateinit var mImgStart: ImageView
     lateinit var mProgress: ProgressBar
+    lateinit var mSeekBar: SeekBar
+    lateinit var mTvTime: TextView
+    lateinit var mImgFullNormal: ImageView //全屏普通屏切换
+    lateinit var mBottomController: ImageView
+
+    internal var mBottomTimerTask: TimerTask? = null
+    internal var mBottomTimer: Timer? = null
 
     private var ON_PAUSE_PLAYING = -1 //按下Home键时是以PAUSE状态还是PLAYING状态
 
@@ -47,13 +54,19 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         initView()
         initEvent()
 
-        mGesture = videoGesture(context)
+        mGesture = createVideoGesture(context)
     }
 
     private fun initView() {
         mTextureContainer = findViewById(R.id.texture_container)
         mImgStart = findViewById(R.id.img_center_controller)
         mProgress = findViewById(R.id.progress)
+
+        mBottomContainer = findViewById(R.id.bottom_container)
+        mSeekBar = findViewById(R.id.progress_seekbar)
+        mTvTime = findViewById(R.id.tv_progress_time)
+        mImgFullNormal = findViewById(R.id.img_screen_full_normal)
+        mBottomController = findViewById(R.id.img_bottom_controller)
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -79,20 +92,23 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     }
 
     fun onPauseLifeCycle(): Unit {
-        if (mStatus == Status.PAUSE) {
-            ON_PAUSE_PLAYING = mStatus
+        when (mStatus) {
+            Status.PAUSE -> {
+                ON_PAUSE_PLAYING = mStatus
+                mMedia?.pause()
+            }
+            Status.PLAYING -> {
+                ON_PAUSE_PLAYING = mStatus
+                mMedia?.pause()
+            }
         }
-        if (mStatus == Status.PLAYING) {
-            ON_PAUSE_PLAYING = mStatus
-        }
-        mMedia.pause()
     }
 
     fun onResumeLifeCycle(): Unit {
         if (ON_PAUSE_PLAYING == Status.PLAYING) {
-            mMedia.start()
+            mMedia?.start()
         } else if (ON_PAUSE_PLAYING == Status.PAUSE) {
-            mMedia.pause()
+            mMedia?.pause()
         }
         ON_PAUSE_PLAYING = -1
     }
@@ -102,6 +118,14 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mMedia = RedTeaMediaPlayer(this)
         mTexture.surfaceTextureListener = mMedia
         mTextureContainer.addView(mTexture)
+    }
+
+    private fun createBottomTimerTask() {
+
+    }
+
+    private fun cancelBottomTimerTask() {
+
     }
 
     override fun onClick(v: View?) {
@@ -122,7 +146,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mStatus = Status.PREPARE
         mProgress.visibility = VISIBLE
         mImgStart.visibility = GONE
-        mMedia.start()
+        mMedia?.start()
     }
 
     override fun onInfo(what: Int, extra: Int) {
@@ -148,4 +172,13 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     }
 
     override fun getUrl(): String = mUrl
+
+    /**
+     * 所有任务定时器
+     */
+    internal class AllTimerTask(private val fn: () -> Unit) : TimerTask() {
+        override fun run() {
+            fn.invoke()
+        }
+    }
 }

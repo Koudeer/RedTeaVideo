@@ -7,18 +7,22 @@ import android.view.MotionEvent
 import android.view.View
 import com.koudeer.lib.enum.Status
 import com.koudeer.lib.enum.type
+import java.util.*
 
-fun RedTeaVideo.videoGesture(context: Context): GestureDetector =
+/**
+ * 创建手势
+ */
+internal fun RedTeaVideo.createVideoGesture(context: Context): GestureDetector =
     GestureDetector(context.applicationContext, object : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent?): Boolean {
             Log.d(TAG, "onDoubleTap: ${mStatus.type}")
             when (mStatus) {
                 Status.PLAYING -> {
-                    mMedia.pause()
+                    mMedia?.pause()
                     mStatus = Status.PAUSE
                 }
                 Status.PAUSE -> {
-                    mMedia.start()
+                    mMedia?.start()
                     mStatus = Status.PLAYING
                 }
             }
@@ -26,9 +30,57 @@ fun RedTeaVideo.videoGesture(context: Context): GestureDetector =
         }
 
         override fun onSingleTapConfirmed(e: MotionEvent?): Boolean {
-            if (mStatus == Status.NORMAL) {
-                mImgStart.performClick()
+            when (mStatus) {
+                Status.NORMAL -> {
+                    mImgStart.performClick()
+                }
+                Status.PLAYING -> {
+                    visiblityBottomContainerSet()
+                }
             }
             return super.onSingleTapConfirmed(e)
         }
     })
+
+internal fun RedTeaVideo.updateProgress(p: Int) {
+    post {
+        mSeekBar.progress = p
+    }
+}
+
+/**
+ * 创建底部容器定时设置可见性为invisible
+ */
+internal fun RedTeaVideo.createBottomContainerTask() {
+    cancelBottomContainerTask()
+    mBottomTimerTask = RedTeaVideo.AllTimerTask {
+        post {
+            mBottomContainer.visibility = View.INVISIBLE
+        }
+    }
+    mBottomTimer = Timer()
+    mBottomTimer?.schedule(mBottomTimerTask, 3000)
+}
+
+/**
+ * 取消底部容器定时器
+ */
+internal fun RedTeaVideo.cancelBottomContainerTask() {
+    mBottomTimer?.cancel()
+    mBottomTimerTask?.cancel()
+}
+
+/**
+ * 底部容器可见性设置
+ */
+internal fun RedTeaVideo.visiblityBottomContainerSet() {
+    if (mBottomContainer.visibility == View.VISIBLE) {
+        mBottomContainer.visibility = View.INVISIBLE
+        //cancel
+        cancelBottomContainerTask()
+    } else if (mBottomContainer.visibility == View.INVISIBLE) {
+        mBottomContainer.visibility = View.VISIBLE
+        //create
+        createBottomContainerTask()
+    }
+}
