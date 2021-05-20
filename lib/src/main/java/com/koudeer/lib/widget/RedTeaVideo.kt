@@ -17,7 +17,8 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
 import java.lang.RuntimeException
 import java.util.*
 
-class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListener {
+class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListener,
+    SeekBar.OnSeekBarChangeListener {
     val TAG = "RedTeaVideo"
 
     private var mUrl: String = ""
@@ -36,8 +37,13 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     lateinit var mImgFullNormal: ImageView //全屏普通屏切换
     lateinit var mBottomController: ImageView
 
+    //底部容器定时器
     internal var mBottomTimerTask: TimerTask? = null
     internal var mBottomTimer: Timer? = null
+
+    //进度定时器
+    internal var mProgressTimerTask: TimerTask? = null
+    internal var mProgressTimer: Timer? = null
 
     private var ON_PAUSE_PLAYING = -1 //按下Home键时是以PAUSE状态还是PLAYING状态
 
@@ -74,6 +80,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mImgStart.setOnClickListener(this)
         mTextureContainer.setOnTouchListener(this)
         mTextureContainer.isClickable = true
+        mSeekBar.setOnSeekBarChangeListener(this)
     }
 
     fun setUrl(url: String): Unit {
@@ -120,14 +127,6 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mTextureContainer.addView(mTexture)
     }
 
-    private fun createBottomTimerTask() {
-
-    }
-
-    private fun cancelBottomTimerTask() {
-
-    }
-
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.img_center_controller -> startVideo()
@@ -151,11 +150,17 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
 
     override fun onInfo(what: Int, extra: Int) {
         //IjkMediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START 渲染视频的第一帧 说明进入播放状态
-        Log.d(TAG, "onInfo: ")
         if (what == IjkMediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
             Log.d(TAG, "onInfo: PLAYING ${Thread.currentThread().name}")
             mStatus = Status.PLAYING
             mProgress.visibility = GONE
+            createProgressTimerTask()
+        }
+        if (what == IjkMediaPlayer.MEDIA_INFO_BUFFERING_START){
+            Log.d(TAG, "onInfo 开始缓冲: $what  $extra")
+        }
+        if (what == IjkMediaPlayer.MEDIA_INFO_BUFFERING_END){
+            Log.d(TAG, "onInfo 结束缓冲: $what  $extra")
         }
     }
 
@@ -164,14 +169,35 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     }
 
     override fun onError() {
-
+        Log.d(TAG, "onError: ")
+        mStatus = Status.ERROR
     }
 
     override fun onCompletion() {
+        Log.d(TAG, "onCompletion: ")
+        mStatus = Status.COMPLETE
+    }
 
+    override fun onBuffer(buf: Int) {
     }
 
     override fun getUrl(): String = mUrl
+
+    //Seek
+    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+//        Log.d(TAG, "onProgressChanged: ")
+    }
+
+    override fun onStartTrackingTouch(seekBar: SeekBar?) {
+        Log.d(TAG, "onStartTrackingTouch: ")
+    }
+
+    override fun onStopTrackingTouch(seekBar: SeekBar) {
+        val time = seekBar.progress * mMedia?.getDuration()!! / 100
+        mMedia?.seekTo(time)
+        createProgressTimerTask()
+    }
+    //Seek
 
     /**
      * 所有任务定时器

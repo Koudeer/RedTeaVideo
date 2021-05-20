@@ -16,4 +16,6 @@ interface IVideo {
 
     fun onCompletion()
 
+    fun onBuffer(buf: Int)
+
 }

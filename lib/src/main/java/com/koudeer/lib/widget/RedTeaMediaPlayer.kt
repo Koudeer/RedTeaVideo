@@ -4,14 +4,14 @@ import android.graphics.SurfaceTexture
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
-import android.util.Log
 import android.view.Surface
 import tv.danmaku.ijk.media.player.IMediaPlayer
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
 
 class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
     IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,
-    IMediaPlayer.OnCompletionListener, IMediaPlayer.OnErrorListener {
+    IMediaPlayer.OnCompletionListener, IMediaPlayer.OnErrorListener,
+    IMediaPlayer.OnBufferingUpdateListener {
     private val TAG = "RedTeaMediaPlayer"
 
     private lateinit var mMedia: IjkMediaPlayer
@@ -32,6 +32,7 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
             mMedia.setOnInfoListener(this)
             mMedia.setOnCompletionListener(this)
             mMedia.setOnErrorListener(this)
+            mMedia.setOnBufferingUpdateListener(this)
 
             mMedia.setDataSource(iVideo.getUrl())
             mMedia.prepareAsync()
@@ -86,5 +87,29 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
     override fun onError(p0: IMediaPlayer?, p1: Int, p2: Int): Boolean {
         mHandler.post { iVideo.onError() }
         return false
+    }
+
+    override fun getCurrentPosition(): Long {
+        return mMedia.currentPosition
+    }
+
+    override fun getDuration(): Long {
+        return mMedia.duration
+    }
+
+    override fun onBufferingUpdate(p0: IMediaPlayer?, p1: Int) {
+        mHandler.post {
+            iVideo.onBuffer(p1)
+        }
+    }
+
+    override fun seekTo(p: Long) {
+        mMediaHandler.post {
+            try {
+                mMedia.seekTo(p)
+            } catch (e: IllegalStateException) {
+                e.printStackTrace()
+            }
+        }
     }
 }

@@ -20,4 +20,10 @@ abstract class IRedTeaMediaPlayer(val iVideo: IVideo) : TextureView.SurfaceTextu
 
     abstract fun isPlayer(): Boolean
 
+    abstract fun getCurrentPosition(): Long
+
+    abstract fun getDuration(): Long
+
+    abstract fun seekTo(p: Long);
+
 }

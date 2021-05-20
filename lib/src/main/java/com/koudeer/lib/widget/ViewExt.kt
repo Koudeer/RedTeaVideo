@@ -42,9 +42,15 @@ internal fun RedTeaVideo.createVideoGesture(context: Context): GestureDetector =
         }
     })
 
-internal fun RedTeaVideo.updateProgress(p: Int) {
+/**
+ * 定时任务更新进度条
+ */
+internal fun RedTeaVideo.updateProgress() {
     post {
-        mSeekBar.progress = p
+        val p = mMedia!!.getCurrentPosition()
+        val d = mMedia!!.getDuration()
+        val progress = (p * 100 / if (d == 0L) 1 else d).toInt()
+        mSeekBar.progress = progress
     }
 }
 
@@ -59,6 +65,7 @@ internal fun RedTeaVideo.createBottomContainerTask() {
         }
     }
     mBottomTimer = Timer()
+    //底部容器3秒后隐藏
     mBottomTimer?.schedule(mBottomTimerTask, 3000)
 }
 
@@ -83,4 +90,18 @@ internal fun RedTeaVideo.visiblityBottomContainerSet() {
         //create
         createBottomContainerTask()
     }
+}
+
+internal fun RedTeaVideo.createProgressTimerTask() {
+    cancelProgressTimerTask()
+    mProgressTimerTask = RedTeaVideo.AllTimerTask {
+        updateProgress()
+    }
+    mProgressTimer = Timer()
+    mProgressTimer?.schedule(mProgressTimerTask, 0, 500)
+}
+
+internal fun RedTeaVideo.cancelProgressTimerTask() {
+    mProgressTimerTask?.cancel()
+    mProgressTimer?.cancel()
 }
