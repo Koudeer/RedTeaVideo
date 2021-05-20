@@ -27,6 +27,13 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
 
             //自动播放 0关闭 1开启
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0)
+            //设置seekTo能够快速seek到指定位置并播放
+            mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "fflags", "fastseek")
+            mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 10)
+            //1硬解 0软解
+            mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "mediacodec", 0)
+            //某些视频在SeekTo的时候，会跳回到拖动前的位置，这是因为视频的关键帧的问题，通俗一点就是FFMPEG不兼容，视频压缩过于厉害，seek只支持关键帧，出现这个情况就是原始的视频文件中i 帧比较少
+            mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "enable-accurate-seek", 1)
 
             mMedia.setOnPreparedListener(this)
             mMedia.setOnInfoListener(this)

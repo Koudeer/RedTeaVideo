@@ -81,6 +81,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mTextureContainer.setOnTouchListener(this)
         mTextureContainer.isClickable = true
         mSeekBar.setOnSeekBarChangeListener(this)
+        mBottomController.setOnClickListener(this)
     }
 
     fun setUrl(url: String): Unit {
@@ -109,6 +110,8 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
                 mMedia?.pause()
             }
         }
+        cancelProgressTimerTask()
+        cancelBottomContainerTask()
     }
 
     fun onResumeLifeCycle(): Unit {
@@ -116,6 +119,11 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
             mMedia?.start()
         } else if (ON_PAUSE_PLAYING == Status.PAUSE) {
             mMedia?.pause()
+        }
+        //防止取消后不会更新progress
+        if (ON_PAUSE_PLAYING != -1) {
+            createProgressTimerTask()
+            createBottomContainerTask()
         }
         ON_PAUSE_PLAYING = -1
     }
@@ -130,6 +138,9 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     override fun onClick(v: View?) {
         when (v?.id) {
             R.id.img_center_controller -> startVideo()
+            R.id.img_bottom_controller -> {
+                //这里改变底部暂停键UI
+            }
         }
     }
 
@@ -153,14 +164,16 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         if (what == IjkMediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START) {
             Log.d(TAG, "onInfo: PLAYING ${Thread.currentThread().name}")
             mStatus = Status.PLAYING
-            mProgress.visibility = GONE
+            mProgress.visibility = INVISIBLE
             createProgressTimerTask()
         }
-        if (what == IjkMediaPlayer.MEDIA_INFO_BUFFERING_START){
+        if (what == IjkMediaPlayer.MEDIA_INFO_BUFFERING_START) {
             Log.d(TAG, "onInfo 开始缓冲: $what  $extra")
+            mProgress.visibility = View.VISIBLE
         }
-        if (what == IjkMediaPlayer.MEDIA_INFO_BUFFERING_END){
+        if (what == IjkMediaPlayer.MEDIA_INFO_BUFFERING_END) {
             Log.d(TAG, "onInfo 结束缓冲: $what  $extra")
+            mProgress.visibility = View.INVISIBLE
         }
     }
 
@@ -185,7 +198,19 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
 
     //Seek
     override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-//        Log.d(TAG, "onProgressChanged: ")
+        //改变文本时间
+        Log.d(TAG, "onProgressChanged: $progress")
+        if (fromUser) {
+            //fromUser 手动拖动是为true
+            mMedia?.let {
+                //取消进度条计算，不然会疯狂跳动
+                cancelProgressTimerTask()
+                mMedia?.let {
+                    val d = it.getDuration()
+                    mTvTime.text = stringForTime(progress * d / 100)
+                }
+            }
+        }
     }
 
     override fun onStartTrackingTouch(seekBar: SeekBar?) {
@@ -196,6 +221,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         val time = seekBar.progress * mMedia?.getDuration()!! / 100
         mMedia?.seekTo(time)
         createProgressTimerTask()
+        createBottomContainerTask()
     }
     //Seek
 

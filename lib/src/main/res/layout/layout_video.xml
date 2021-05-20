@@ -28,6 +28,7 @@
         android:id="@+id/bottom_container"
         android:layout_width="match_parent"
         android:layout_height="30dp"
+        android:background="#cccc"
         android:layout_alignParentBottom="true"
         android:padding="1dp"
         android:visibility="invisible">
@@ -44,13 +45,16 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:layout_centerInParent="true"
-            android:layout_toStartOf="@id/img_screen_full_normal"
+            android:layout_toStartOf="@id/tv_progress_time"
             android:layout_toEndOf="@id/img_bottom_controller" />
 
         <TextView
             android:id="@+id/tv_progress_time"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:textColor="#FFF"
+            android:layout_toStartOf="@id/img_screen_full_normal"
+            android:layout_centerVertical="true" />
 
         <ImageView
             android:id="@+id/img_screen_full_normal"
