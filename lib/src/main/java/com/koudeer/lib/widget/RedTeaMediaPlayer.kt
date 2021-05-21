@@ -4,6 +4,7 @@ import android.graphics.SurfaceTexture
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
+import android.util.Log
 import android.view.Surface
 import tv.danmaku.ijk.media.player.IMediaPlayer
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
@@ -11,7 +12,7 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer
 class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
     IMediaPlayer.OnPreparedListener, IMediaPlayer.OnInfoListener,
     IMediaPlayer.OnCompletionListener, IMediaPlayer.OnErrorListener,
-    IMediaPlayer.OnBufferingUpdateListener {
+    IMediaPlayer.OnBufferingUpdateListener, IMediaPlayer.OnVideoSizeChangedListener {
     private val TAG = "RedTeaMediaPlayer"
 
     private lateinit var mMedia: IjkMediaPlayer
@@ -32,7 +33,6 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 10)
             //1硬解 0软解
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "mediacodec", 0)
-            //某些视频在SeekTo的时候，会跳回到拖动前的位置，这是因为视频的关键帧的问题，通俗一点就是FFMPEG不兼容，视频压缩过于厉害，seek只支持关键帧，出现这个情况就是原始的视频文件中i 帧比较少
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "enable-accurate-seek", 1)
 
             mMedia.setOnPreparedListener(this)
@@ -40,8 +40,10 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
             mMedia.setOnCompletionListener(this)
             mMedia.setOnErrorListener(this)
             mMedia.setOnBufferingUpdateListener(this)
+            mMedia.setOnVideoSizeChangedListener(this)
 
             mMedia.setDataSource(iVideo.getUrl())
+            mMedia.setScreenOnWhilePlaying(true)
             mMedia.prepareAsync()
             mMedia.setSurface(Surface(mSurfaceTexture))
         }
@@ -61,9 +63,11 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
         if (mSurfaceTexture == null) {
+            Log.d(TAG, "onSurfaceTextureAvailable: 1")
             mSurfaceTexture = surface
             prepare()
         } else {
+            Log.d(TAG, "onSurfaceTextureAvailable: 2")
             iVideo.onSurfaceTexture(mSurfaceTexture!!)
         }
     }
@@ -107,6 +111,12 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
     override fun onBufferingUpdate(p0: IMediaPlayer?, p1: Int) {
         mHandler.post {
             iVideo.onBuffer(p1)
+        }
+    }
+
+    override fun onVideoSizeChanged(p0: IMediaPlayer?, p1: Int, p2: Int, p3: Int, p4: Int) {
+        mHandler.post {
+            iVideo.onVideoSizeChange(p0?.videoWidth, p0?.videoHeight)
         }
     }
 

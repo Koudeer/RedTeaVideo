@@ -18,4 +18,5 @@ interface IVideo {
 
     fun onBuffer(buf: Int)
 
+    fun onVideoSizeChange(width: Int?, height: Int?)
 }

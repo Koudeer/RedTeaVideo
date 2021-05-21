@@ -4,9 +4,11 @@ import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import com.koudeer.lib.widget.RedTeaVideo
 
 class MainActivity : AppCompatActivity() {
+    private val TAG = "MainActivity"
 
     private lateinit var mVideo: RedTeaVideo
     private val url =
@@ -22,11 +24,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
+        Log.d(TAG, "onResume: ")
         mVideo.onResumeLifeCycle()
     }
 
     override fun onPause() {
         super.onPause()
+        Log.d(TAG, "onPause: ")
         mVideo.onPauseLifeCycle()
     }
 }

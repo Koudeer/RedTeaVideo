@@ -28,9 +28,10 @@
         android:id="@+id/bottom_container"
         android:layout_width="match_parent"
         android:layout_height="30dp"
-        android:background="#cccc"
         android:layout_alignParentBottom="true"
-        android:padding="1dp"
+        android:background="#3000"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
         android:visibility="invisible">
 
         <ImageView
@@ -52,9 +53,11 @@
             android:id="@+id/tv_progress_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:textColor="#FFF"
+            android:layout_centerVertical="true"
+            android:layout_marginStart="0dp"
+            android:layout_marginEnd="5dp"
             android:layout_toStartOf="@id/img_screen_full_normal"
-            android:layout_centerVertical="true" />
+            android:textColor="#FFF" />
 
         <ImageView
             android:id="@+id/img_screen_full_normal"

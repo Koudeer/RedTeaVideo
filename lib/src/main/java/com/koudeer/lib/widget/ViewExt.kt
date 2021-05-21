@@ -5,6 +5,7 @@ import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import com.koudeer.lib.R
 import com.koudeer.lib.enum.Status
 import com.koudeer.lib.enum.type
 import java.util.*
@@ -16,16 +17,7 @@ internal fun RedTeaVideo.createVideoGesture(context: Context): GestureDetector =
     GestureDetector(context.applicationContext, object : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent?): Boolean {
             Log.d(TAG, "onDoubleTap: ${mStatus.type}")
-            when (mStatus) {
-                Status.PLAYING -> {
-                    mMedia?.pause()
-                    mStatus = Status.PAUSE
-                }
-                Status.PAUSE -> {
-                    mMedia?.start()
-                    mStatus = Status.PLAYING
-                }
-            }
+            controllerToggleUI()
             //双击都会显示底部控制器容器
             mBottomContainer.visibility = View.VISIBLE
             createBottomContainerTask()
@@ -37,7 +29,7 @@ internal fun RedTeaVideo.createVideoGesture(context: Context): GestureDetector =
                 Status.NORMAL -> {
                     mImgStart.performClick()
                 }
-                Status.PLAYING -> {
+                Status.PLAYING, Status.PAUSE -> {
                     visiblityBottomContainerSet()
                 }
             }
@@ -55,7 +47,7 @@ internal fun RedTeaVideo.updateProgress() {
         val progress = (p * 100 / if (d == 0L) 1 else d).toInt()
         mSeekBar.progress = progress
 
-        if (p != 0L) mTvTime.text = stringForTime(p)
+        if (p != 0L) mTvTime.text = String.format("%s/%s",stringForTime(d),stringForTime(p))
 
         //播放时 有时候Progress不会消失，这里可能会影响一些性能
         if (mProgress.visibility == View.VISIBLE) mProgress.visibility = View.INVISIBLE
@@ -100,7 +92,9 @@ internal fun RedTeaVideo.visiblityBottomContainerSet() {
     }
 }
 
-
+/**
+ * 进度条定时器
+ */
 internal fun RedTeaVideo.createProgressTimerTask() {
     cancelProgressTimerTask()
     mProgressTimerTask = RedTeaVideo.AllTimerTask {
@@ -110,25 +104,32 @@ internal fun RedTeaVideo.createProgressTimerTask() {
     mProgressTimer?.schedule(mProgressTimerTask, 0, 500)
 }
 
+/**
+ * 取消进度条定时器
+ */
 internal fun RedTeaVideo.cancelProgressTimerTask() {
     mProgressTimerTask?.cancel()
     mProgressTimer?.cancel()
 }
 
-internal fun stringForTime(timeMs: Long): String {
-    if (timeMs <= 0 || timeMs >= 24 * 60 * 60 * 1000) {
-        return "00:00"
+/**
+ * 底部控制器 管理事件 UI切换
+ */
+internal fun RedTeaVideo.controllerToggleUI() {
+    when (mStatus) {
+        Status.PLAYING -> {
+            mMedia?.pause()
+            mStatus = Status.PAUSE
+            mBottomController.setImageResource(R.mipmap.start_mini)
+        }
+        Status.PAUSE -> {
+            mMedia?.start()
+            mStatus = Status.PLAYING
+            mBottomController.setImageResource(R.mipmap.pause_mini)
+        }
     }
+}
 
-    val totalSeconds = timeMs / 1000
-    val seconds = totalSeconds % 60.toInt()
-    val minutes = (totalSeconds / 60) % 60
-    val hours = (totalSeconds / 3600)
-    val stringBuilder = StringBuilder()
-    val mFormatter = Formatter(stringBuilder, Locale.getDefault())
-    if (hours > 0) {
-        return mFormatter.format("%d:%02d:%02d", hours, minutes, seconds).toString()
-    } else {
-        return mFormatter.format("%02d:%02d", minutes, seconds).toString()
-    }
+internal fun RedTeaVideo.openFullScreen() {
+
 }

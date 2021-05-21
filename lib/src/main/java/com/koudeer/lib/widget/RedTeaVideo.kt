@@ -2,19 +2,16 @@ package com.koudeer.lib.widget
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.graphics.SurfaceTexture
 import android.text.TextUtils
 import android.util.AttributeSet
 import android.util.Log
-import android.view.GestureDetector
-import android.view.MotionEvent
-import android.view.TextureView
-import android.view.View
+import android.view.*
 import android.widget.*
 import com.koudeer.lib.R
 import com.koudeer.lib.enum.Status
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
-import java.lang.RuntimeException
 import java.util.*
 
 class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListener,
@@ -82,6 +79,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mTextureContainer.isClickable = true
         mSeekBar.setOnSeekBarChangeListener(this)
         mBottomController.setOnClickListener(this)
+        mImgFullNormal.setOnClickListener(this)
     }
 
     fun setUrl(url: String): Unit {
@@ -140,6 +138,12 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
             R.id.img_center_controller -> startVideo()
             R.id.img_bottom_controller -> {
                 //这里改变底部暂停键UI
+               controllerToggleUI()
+            }
+            R.id.img_screen_full_normal -> {
+                //需要在文件清单添加 android:configChanges="orientation|screenSize" 这样就不会触发Pause Resume生命周期
+
+                scanForActivity(context)?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
             }
         }
     }
@@ -178,6 +182,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     }
 
     override fun onSurfaceTexture(surfaceTexture: SurfaceTexture) {
+        Log.d(TAG, "onSurfaceTexture: ")
         mTexture.setSurfaceTexture(surfaceTexture)
     }
 
@@ -196,18 +201,22 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
 
     override fun getUrl(): String = mUrl
 
+    override fun onVideoSizeChange(width: Int?, height: Int?) {
+    }
+
     //Seek
     override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
         //改变文本时间
-        Log.d(TAG, "onProgressChanged: $progress")
         if (fromUser) {
             //fromUser 手动拖动是为true
             mMedia?.let {
                 //取消进度条计算，不然会疯狂跳动
+                // TODO: 2021/5/22 这里可以用flag 判断是否执行过一次 以后优化
                 cancelProgressTimerTask()
+                cancelBottomContainerTask()
                 mMedia?.let {
                     val d = it.getDuration()
-                    mTvTime.text = stringForTime(progress * d / 100)
+                    mTvTime.text = String.format("%s/%s", stringForTime(mMedia?.getDuration()!!),stringForTime(progress * d / 100))
                 }
             }
         }
