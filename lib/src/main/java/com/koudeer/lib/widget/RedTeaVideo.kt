@@ -3,6 +3,7 @@ package com.koudeer.lib.widget
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.SurfaceTexture
 import android.text.TextUtils
 import android.util.AttributeSet
@@ -10,6 +11,7 @@ import android.util.Log
 import android.view.*
 import android.widget.*
 import com.koudeer.lib.R
+import com.koudeer.lib.enum.Screen
 import com.koudeer.lib.enum.Status
 import tv.danmaku.ijk.media.player.IjkMediaPlayer
 import java.util.*
@@ -20,8 +22,13 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
 
     private var mUrl: String = ""
     var mStatus = Status.NORMAL
+    var mScreen = Screen.NORMAL_SCREEN
     private var mGesture: GestureDetector
     internal var mMedia: IRedTeaMediaPlayer? = null
+
+    internal var mLayoutParams: ViewGroup.LayoutParams? = null
+    internal var mVideoIndex = -1
+    internal var mParentViewGroup: ViewGroup? = null
 
     private lateinit var mTexture: TextureView
 
@@ -33,6 +40,9 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     lateinit var mTvTime: TextView
     lateinit var mImgFullNormal: ImageView //全屏普通屏切换
     lateinit var mBottomController: ImageView
+
+    //seekbar 拖动flag
+    private var isSeekTouch = false
 
     //底部容器定时器
     internal var mBottomTimerTask: TimerTask? = null
@@ -131,6 +141,9 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mMedia = RedTeaMediaPlayer(this)
         mTexture.surfaceTextureListener = mMedia
         mTextureContainer.addView(mTexture)
+
+        mProgress.visibility = VISIBLE
+        mImgStart.visibility = GONE
     }
 
     override fun onClick(v: View?) {
@@ -138,12 +151,14 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
             R.id.img_center_controller -> startVideo()
             R.id.img_bottom_controller -> {
                 //这里改变底部暂停键UI
-               controllerToggleUI()
+                controllerToggleUI()
             }
             R.id.img_screen_full_normal -> {
                 //需要在文件清单添加 android:configChanges="orientation|screenSize" 这样就不会触发Pause Resume生命周期
-
-                scanForActivity(context)?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                when (mScreen) {
+                    Screen.NORMAL_SCREEN -> openFullScreen()
+                    Screen.FULL_SCREEN -> closeFullScreen()
+                }
             }
         }
     }
@@ -157,9 +172,8 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
 
     //ijkplayer prepare回调
     override fun prepare() {
+        Log.d(TAG, "prepare: ")
         mStatus = Status.PREPARE
-        mProgress.visibility = VISIBLE
-        mImgStart.visibility = GONE
         mMedia?.start()
     }
 
@@ -189,11 +203,15 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
     override fun onError() {
         Log.d(TAG, "onError: ")
         mStatus = Status.ERROR
+        mImgStart.visibility = VISIBLE
+        mImgStart.setImageResource(R.mipmap.replay)
     }
 
     override fun onCompletion() {
         Log.d(TAG, "onCompletion: ")
         mStatus = Status.COMPLETE
+        mImgStart.visibility = VISIBLE
+        mImgStart.setImageResource(R.mipmap.replay)
     }
 
     override fun onBuffer(buf: Int) {
@@ -211,12 +229,18 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
             //fromUser 手动拖动是为true
             mMedia?.let {
                 //取消进度条计算，不然会疯狂跳动
-                // TODO: 2021/5/22 这里可以用flag 判断是否执行过一次 以后优化
-                cancelProgressTimerTask()
-                cancelBottomContainerTask()
+                if (!isSeekTouch) {//拖动进度条事件 这里只执行一次
+                    cancelProgressTimerTask()
+                    cancelBottomContainerTask()
+                    isSeekTouch = true
+                }
                 mMedia?.let {
                     val d = it.getDuration()
-                    mTvTime.text = String.format("%s/%s", stringForTime(mMedia?.getDuration()!!),stringForTime(progress * d / 100))
+                    mTvTime.text = String.format(
+                        "%s/%s",
+                        stringForTime(mMedia?.getDuration()!!),
+                        stringForTime(progress * d / 100)
+                    )
                 }
             }
         }
@@ -231,6 +255,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         mMedia?.seekTo(time)
         createProgressTimerTask()
         createBottomContainerTask()
+        isSeekTouch = false
     }
     //Seek
 

@@ -25,3 +25,12 @@ val Int.type
         Status.COMPLETE -> "COMPLETE"
         else -> "NULL"
     }
+
+@IntDef
+@kotlin.annotation.Retention(AnnotationRetention.SOURCE)
+annotation class Screen {
+    companion object {
+        const val NORMAL_SCREEN = 10
+        const val FULL_SCREEN = 11
+    }
+}

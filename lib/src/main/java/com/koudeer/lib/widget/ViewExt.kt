@@ -1,11 +1,15 @@
 package com.koudeer.lib.widget
 
 import android.content.Context
+import android.content.pm.ActivityInfo
 import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import com.koudeer.lib.R
+import com.koudeer.lib.enum.Screen
 import com.koudeer.lib.enum.Status
 import com.koudeer.lib.enum.type
 import java.util.*
@@ -17,10 +21,15 @@ internal fun RedTeaVideo.createVideoGesture(context: Context): GestureDetector =
     GestureDetector(context.applicationContext, object : GestureDetector.SimpleOnGestureListener() {
         override fun onDoubleTap(e: MotionEvent?): Boolean {
             Log.d(TAG, "onDoubleTap: ${mStatus.type}")
-            controllerToggleUI()
-            //双击都会显示底部控制器容器
-            mBottomContainer.visibility = View.VISIBLE
-            createBottomContainerTask()
+            //这里防止一开始双击会显示底部容器
+            if (mStatus != Status.NORMAL) {
+                controllerToggleUI()
+                //双击都会显示底部控制器容器
+                mBottomContainer.visibility = View.VISIBLE
+                createBottomContainerTask()
+            } else {
+                mImgStart.performClick()
+            }
             return super.onDoubleTap(e)
         }
 
@@ -47,10 +56,10 @@ internal fun RedTeaVideo.updateProgress() {
         val progress = (p * 100 / if (d == 0L) 1 else d).toInt()
         mSeekBar.progress = progress
 
-        if (p != 0L) mTvTime.text = String.format("%s/%s",stringForTime(d),stringForTime(p))
+        if (p != 0L) mTvTime.text = String.format("%s/%s", stringForTime(d), stringForTime(p))
 
         //播放时 有时候Progress不会消失，这里可能会影响一些性能
-        if (mProgress.visibility == View.VISIBLE) mProgress.visibility = View.INVISIBLE
+//        if (mProgress.visibility == View.VISIBLE) mProgress.visibility = View.INVISIBLE
     }
 }
 
@@ -130,6 +139,40 @@ internal fun RedTeaVideo.controllerToggleUI() {
     }
 }
 
+/**
+ * 开启全屏
+ */
 internal fun RedTeaVideo.openFullScreen() {
 
+    mParentViewGroup = parent as ViewGroup
+
+    mLayoutParams = layoutParams
+    mVideoIndex = mParentViewGroup!!.indexOfChild(this)
+
+    mParentViewGroup!!.removeView(this)
+    val fullLayout: ViewGroup.LayoutParams = FrameLayout.LayoutParams(
+        ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT
+    )
+    val vg = scanForActivity(context)?.window?.decorView as ViewGroup
+    vg.addView(this, fullLayout)
+
+    scanForActivity(context)?.requestedOrientation =
+        ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+
+    mScreen = Screen.FULL_SCREEN
+}
+
+/**
+ * 关闭全屏
+ */
+internal fun RedTeaVideo.closeFullScreen() {
+
+    var vg = scanForActivity(context)?.window?.decorView as ViewGroup
+    vg.removeView(this)
+
+    mParentViewGroup?.addView(this, mVideoIndex, mLayoutParams)
+
+    scanForActivity(context)?.requestedOrientation =
+        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+    mScreen = Screen.NORMAL_SCREEN
 }
