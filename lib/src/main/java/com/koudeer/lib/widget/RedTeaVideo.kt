@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.SurfaceTexture
+import android.media.AudioManager
 import android.text.TextUtils
 import android.util.AttributeSet
 import android.util.Log
@@ -204,6 +205,7 @@ class RedTeaVideo : FrameLayout, IVideo, View.OnClickListener, View.OnTouchListe
         Log.d(TAG, "onError: ")
         mStatus = Status.ERROR
         mImgStart.visibility = VISIBLE
+        mProgress.visibility = INVISIBLE
         mImgStart.setImageResource(R.mipmap.replay)
     }
 

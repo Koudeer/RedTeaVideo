@@ -30,7 +30,8 @@ class RedTeaMediaPlayer(iVideo: IVideo) : IRedTeaMediaPlayer(iVideo),
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_PLAYER, "start-on-prepared", 0)
             //设置seekTo能够快速seek到指定位置并播放
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "fflags", "fastseek")
-            mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 10)
+            //此配置会导致 rtmp 只有画面 没有声音
+//            mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "probesize", 1024 * 10)
             //1硬解 0软解
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "mediacodec", 0)
             mMedia.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "enable-accurate-seek", 1)

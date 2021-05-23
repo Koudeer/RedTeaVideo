@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         mVideo = findViewById(R.id.video)
-        mVideo.setUrl(url)
+        mVideo.setUrl(rtsp)
     }
 
     override fun onResume() {
